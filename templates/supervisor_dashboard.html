@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Supervisor - TelcoPlus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --low-loyalty: #ea4335;
+            --medium-loyalty: #fbbc05;
+            --high-loyalty: #34a853;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            background-color: #343a40;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding-top: 20px;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            margin: 5px 0;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #007bff;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .stat-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .loyalty-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .loyalty-low { background-color: var(--low-loyalty); color: white; }
+        .loyalty-medium { background-color: var(--medium-loyalty); color: black; }
+        .loyalty-high { background-color: var(--high-loyalty); color: white; }
+        .points-positive { color: #28a745; font-weight: bold; }
+        .points-negative { color: #dc3545; font-weight: bold; }
+        .points-neutral { color: #6c757d; }
+        .message-user {
+            background-color: #e3f2fd;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .message-bot {
+            background-color: #f1f3f4;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .interaction-card {
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .filter-section {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .progress {
+            height: 10px;
+            margin-top: 5px;
+        }
+        .customer-row:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" style="width: 250px;">
+        <div class="text-center mb-4">
+            <h4>TelcoPlus</h4>
+            <p class="text-muted">Panel de Supervisor</p>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#interactions" data-bs-toggle="tab">
+                    <i class="fas fa-comments me-2"></i>Interacciones
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#loyalty" data-bs-toggle="tab">
+                    <i class="fas fa-chart-line me-2"></i>Evolución de Lealtad
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#customers" data-bs-toggle="tab">
+                    <i class="fas fa-users me-2"></i>Clientes
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="tab-content">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard">
+                <h2 class="mb-4">Dashboard de Supervisión</h2>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card text-white bg-primary">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-comments"></i> Interacciones</h5>
+                                <h2 id="total-interactions">0</h2>
+                                <p class="card-text">Total de mensajes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card text-white bg-success">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-users"></i> Clientes Únicos</h5>
+                                <h2 id="unique-customers">0</h2>
+                                <p class="card-text">Clientes que han interactuado</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card text-white bg-info">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-exchange-alt"></i> Cambios</h5>
+                                <h2 id="total-changes">0</h2>
+                                <p class="card-text">Cambios de lealtad</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card text-white bg-warning">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-chart-pie"></i> Distribución</h5>
+                                <div id="loyalty-distribution">
+                                    <small>Cargando...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Últimas Interacciones</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-interactions">
+                                    <p class="text-center">Cargando...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Últimos Cambios de Lealtad</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-changes">
+                                    <p class="text-center">Cargando...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactions Tab -->
+            <div class="tab-pane fade" id="interactions">
+                <h2 class="mb-4">Historial de Interacciones</h2>
+                
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="customerFilter" class="form-label">Filtrar por Cliente:</label>
+                                <select class="form-select" id="customerFilter">
+                                    <option value="">Todos los clientes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="limitFilter" class="form-label">Mostrar:</label>
+                                <select class="form-select" id="limitFilter">
+                                    <option value="50">50 registros</option>
+                                    <option value="100" selected>100 registros</option>
+                                    <option value="200">200 registros</option>
+                                    <option value="500">500 registros</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="loadInteractions()">
+                                    <i class="fas fa-filter"></i> Aplicar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Cliente</th>
+                                <th>Remitente</th>
+                                <th>Mensaje</th>
+                                <th>Nivel Lealtad</th>
+                                <th>Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interactions-table">
+                            <tr>
+                                <td colspan="6" class="text-center">Cargando interacciones...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loyalty Tab -->
+            <div class="tab-pane fade" id="loyalty">
+                <h2 class="mb-4">Evolución de Lealtad</h2>
+                
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="loyaltyCustomerFilter" class="form-label">Filtrar por Cliente:</label>
+                                <select class="form-select" id="loyaltyCustomerFilter">
+                                    <option value="">Todos los clientes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="loyaltyLimitFilter" class="form-label">Mostrar:</label>
+                                <select class="form-select" id="loyaltyLimitFilter">
+                                    <option value="20">20 registros</option>
+                                    <option value="50" selected>50 registros</option>
+                                    <option value="100">100 registros</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="loadLoyaltyChanges()">
+                                    <i class="fas fa-filter"></i> Aplicar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Cliente</th>
+                                <th>Nivel Anterior</th>
+                                <th>Nivel Nuevo</th>
+                                <th>Puntos Anteriores</th>
+                                <th>Puntos Nuevos</th>
+                                <th>Razón del Cambio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loyalty-table">
+                            <tr>
+                                <td colspan="7" class="text-center">Cargando cambios de lealtad...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customers Tab -->
+            <div class="tab-pane fade" id="customers">
+                <h2 class="mb-4">Gestión de Clientes</h2>
+                
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="searchCustomer" class="form-label">Buscar Cliente:</label>
+                                <input type="text" class="form-control" id="searchCustomer" placeholder="Ingresa Customer ID">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="loyaltyFilter" class="form-label">Filtrar por Lealtad:</label>
+                                <select class="form-select" id="loyaltyFilter">
+                                    <option value="">Todos los niveles</option>
+                                    <option value="0">Baja Lealtad</option>
+                                    <option value="1">Lealtad Media</option>
+                                    <option value="2">Alta Lealtad</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" onclick="loadCustomers()">
+                                    <i class="fas fa-filter"></i> Aplicar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Clientes con Interacciones</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Customer ID</th>
+                                        <th>Total Interacciones</th>
+                                        <th>Última Interacción</th>
+                                        <th>Nivel Actual</th>
+                                        <th>Puntos de Lealtad</th>
+                                        <th>Progreso</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customers-table">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando clientes...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let customersList = [];
+        let allCustomersData = [];
+
+        // Función para cargar estadísticas
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/supervisor/stats');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('total-interactions').textContent = data.data.total_interactions;
+                    document.getElementById('unique-customers').textContent = data.data.unique_customers;
+                    document.getElementById('total-changes').textContent = data.data.total_loyalty_changes;
+                    
+                    // Distribución de lealtad
+                    const dist = data.data.loyalty_distribution;
+                    let distHtml = '';
+                    for (const [level, count] of Object.entries(dist)) {
+                        const levelName = level == 0 ? 'Baja' : level == 1 ? 'Media' : 'Alta';
+                        const levelClass = level == 0 ? 'loyalty-low' : level == 1 ? 'loyalty-medium' : 'loyalty-high';
+                        distHtml += `<div>${levelName}: <span class="loyalty-badge ${levelClass}">${count}</span></div>`;
+                    }
+                    document.getElementById('loyalty-distribution').innerHTML = distHtml;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Función para cargar clientes
+        async function loadCustomers() {
+            try {
+                const response = await fetch('/api/supervisor/customers');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    customersList = data.data;
+                    
+                    // Llenar dropdowns de filtro
+                    const customerFilter = document.getElementById('customerFilter');
+                    const loyaltyFilter = document.getElementById('loyaltyCustomerFilter');
+                    
+                    // Limpiar options existentes (excepto la primera)
+                    while (customerFilter.options.length > 1) customerFilter.remove(1);
+                    while (loyaltyFilter.options.length > 1) loyaltyFilter.remove(1);
+                    
+                    // Agregar clientes
+                    customersList.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer;
+                        option.textContent = customer;
+                        
+                        customerFilter.appendChild(option.cloneNode(true));
+                        loyaltyFilter.appendChild(option.cloneNode(true));
+                    });
+
+                    // Cargar datos detallados de clientes
+                    await loadCustomersDetailed();
+                }
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        // Función para cargar datos detallados de clientes
+        async function loadCustomersDetailed() {
+            try {
+                // En una implementación real, esto obtendría datos de una API
+                // Por ahora, simulamos los datos basados en las interacciones
+                const interactionsResponse = await fetch('/api/supervisor/interactions?limit=1000');
+                const interactionsData = await interactionsResponse.json();
+                
+                if (interactionsData.status === 'success') {
+                    const customersMap = new Map();
+                    
+                    // Procesar interacciones para obtener datos de clientes
+                    interactionsData.data.forEach(interaction => {
+                        if (!customersMap.has(interaction.customer_id)) {
+                            customersMap.set(interaction.customer_id, {
+                                customer_id: interaction.customer_id,
+                                interactions: 0,
+                                last_interaction: interaction.timestamp,
+                                loyalty_level: interaction.loyalty_level,
+                                loyalty_index: interaction.loyalty_index
+                            });
+                        }
+                        
+                        const customer = customersMap.get(interaction.customer_id);
+                        customer.interactions++;
+                        if (new Date(interaction.timestamp) > new Date(customer.last_interaction)) {
+                            customer.last_interaction = interaction.timestamp;
+                            customer.loyalty_level = interaction.loyalty_level;
+                            customer.loyalty_index = interaction.loyalty_index;
+                        }
+                    });
+                    
+                    allCustomersData = Array.from(customersMap.values());
+                    renderCustomersTable();
+                }
+            } catch (error) {
+                console.error('Error loading detailed customers:', error);
+            }
+        }
+
+        // Función para renderizar la tabla de clientes
+        function renderCustomersTable() {
+            const searchTerm = document.getElementById('searchCustomer').value.toLowerCase();
+            const loyaltyFilter = document.getElementById('loyaltyFilter').value;
+            
+            let filteredCustomers = allCustomersData;
+            
+            // Aplicar filtros
+            if (searchTerm) {
+                filteredCustomers = filteredCustomers.filter(c => 
+                    c.customer_id.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (loyaltyFilter) {
+                filteredCustomers = filteredCustomers.filter(c => 
+                    c.loyalty_level == loyaltyFilter
+                );
+            }
+            
+            const tableBody = document.getElementById('customers-table');
+            tableBody.innerHTML = '';
+            
+            if (filteredCustomers.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron clientes</td></tr>';
+                return;
+            }
+            
+            filteredCustomers.forEach(customer => {
+                const row = document.createElement('tr');
+                row.className = 'customer-row';
+                
+                const loyaltyClass = customer.loyalty_level == 0 ? 'loyalty-low' : 
+                                   customer.loyalty_level == 1 ? 'loyalty-medium' : 'loyalty-high';
+                const loyaltyText = customer.loyalty_level == 0 ? 'Baja' : 
+                                  customer.loyalty_level == 1 ? 'Media' : 'Alta';
+                
+                // Calcular progreso hacia el siguiente nivel
+                let progressPercentage = 0;
+                let progressLabel = '';
+                
+                if (customer.loyalty_level == 0) {
+                    progressPercentage = Math.min(100, (customer.loyalty_index / 20) * 100);
+                    progressLabel = `Hacia Lealtad Media: ${customer.loyalty_index}/20`;
+                } else if (customer.loyalty_level == 1) {
+                    progressPercentage = Math.min(100, ((customer.loyalty_index - 20) / 20) * 100);
+                    progressLabel = `Hacia Alta Lealtad: ${customer.loyalty_index - 20}/20`;
+                } else {
+                    progressPercentage = 100;
+                    progressLabel = 'Máximo nivel alcanzado';
+                }
+                
+                row.innerHTML = `
+                    <td>${customer.customer_id}</td>
+                    <td>${customer.interactions}</td>
+                    <td>${new Date(customer.last_interaction).toLocaleString()}</td>
+                    <td><span class="loyalty-badge ${loyaltyClass}">${loyaltyText}</span></td>
+                    <td>${customer.loyalty_index} puntos</td>
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar ${loyaltyClass}" role="progressbar" 
+                                 style="width: ${progressPercentage}%" 
+                                 aria-valuenow="${progressPercentage}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <small>${progressLabel}</small>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewCustomerDetails('${customer.customer_id}')">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Función para cargar interacciones
+        // Función para cargar interacciones
+async function loadInteractions() {
+    try {
+        const customerId = document.getElementById('customerFilter').value;
+        const limit = document.getElementById('limitFilter').value;
+        
+        const response = await fetch(`/api/supervisor/interactions?customer_id=${customerId}&limit=${limit}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const tableBody = document.getElementById('interactions-table');
+            tableBody.innerHTML = '';
+            
+            if (data.data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay interacciones</td></tr>';
+                return;
+            }
+            
+            data.data.forEach(interaction => {
+                const row = document.createElement('tr');
+                
+                const loyaltyClass = interaction.loyalty_level == 0 ? 'loyalty-low' : 
+                                   interaction.loyalty_level == 1 ? 'loyalty-medium' : 'loyalty-high';
+                const loyaltyText = interaction.loyalty_level == 0 ? 'Baja' : 
+                                  interaction.loyalty_level == 1 ? 'Media' : 'Alta';
+                
+                // Manejar valores undefined
+                const pointsChange = interaction.points_change || 0;
+                const loyaltyIndex = interaction.loyalty_index || 0;
+                const pointsDisplay = pointsChange > 0 ? `+${pointsChange}` : pointsChange;
+                
+                row.innerHTML = `
+                    <td>${new Date(interaction.timestamp).toLocaleString()}</td>
+                    <td>${interaction.customer_id}</td>
+                    <td>${interaction.sender === 'user' ? 'Cliente' : 'Asistente'}</td>
+                    <td>${interaction.message.length > 100 ? interaction.message.substring(0, 100) + '...' : interaction.message}</td>
+                    <td><span class="loyalty-badge ${loyaltyClass}">${loyaltyText}</span></td>
+                    <td>
+                        ${pointsChange !== 0 ? `<span class="${pointsChange > 0 ? 'text-success' : 'text-danger'}">${pointsDisplay}</span>` : '0'}
+                        <br>
+                        <small>Total: ${loyaltyIndex}</small>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading interactions:', error);
+    }
+}
+
+        // Función para cargar cambios de lealtad
+        // Función para cargar cambios de lealtad
+async function loadLoyaltyChanges() {
+    try {
+        const customerId = document.getElementById('loyaltyCustomerFilter').value;
+        const limit = document.getElementById('loyaltyLimitFilter').value;
+        
+        const response = await fetch(`/api/supervisor/loyalty-changes?customer_id=${customerId}&limit=${limit}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const tableBody = document.getElementById('loyalty-table');
+            tableBody.innerHTML = '';
+            
+            if (data.data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No hay cambios de lealtad</td></tr>';
+                return;
+            }
+            
+            data.data.forEach(change => {
+                const row = document.createElement('tr');
+                
+                const oldClass = change.old_level == 0 ? 'loyalty-low' : 
+                               change.old_level == 1 ? 'loyalty-medium' : 'loyalty-high';
+                const oldText = change.old_level == 0 ? 'Baja' : 
+                              change.old_level == 1 ? 'Media' : 'Alta';
+                
+                const newClass = change.new_level == 0 ? 'loyalty-low' : 
+                               change.new_level == 1 ? 'loyalty-medium' : 'loyalty-high';
+                const newText = change.new_level == 0 ? 'Baja' : 
+                              change.new_level == 1 ? 'Media' : 'Alta';
+                
+                // Manejar valores undefined
+                const oldIndex = change.old_index || 0;
+                const newIndex = change.new_index || 0;
+                const pointsChange = newIndex - oldIndex;
+                const pointsDisplay = pointsChange > 0 ? `+${pointsChange}` : pointsChange;
+                
+                row.innerHTML = `
+                    <td>${new Date(change.timestamp).toLocaleString()}</td>
+                    <td>${change.customer_id}</td>
+                    <td><span class="loyalty-badge ${oldClass}">${oldText}</span></td>
+                    <td><span class="loyalty-badge ${newClass}">${newText}</span></td>
+                    <td>${oldIndex}</td>
+                    <td>${newIndex} <span class="${pointsChange > 0 ? 'text-success' : 'text-danger'}">(${pointsDisplay})</span></td>
+                    <td>${change.change_reason || 'Sin especificar'}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading loyalty changes:', error);
+    }
+}
+
+        // Función para ver detalles de un cliente
+        function viewCustomerDetails(customerId) {
+            // Aquí podrías redirigir a una página de detalles o mostrar un modal
+            alert(`Ver detalles del cliente: ${customerId}`);
+            // En una implementación real, esto cargaría detalles específicos del cliente
+        }
+
+        // Inicializar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadCustomers();
+            loadInteractions();
+            loadLoyaltyChanges();
+            
+            // Configurar event listeners para búsqueda en tiempo real
+            document.getElementById('searchCustomer').addEventListener('input', renderCustomersTable);
+            document.getElementById('loyaltyFilter').addEventListener('change', renderCustomersTable);
+            
+            // Recargar estadísticas cada 30 segundos
+            setInterval(loadStats, 30000);
+        });
+    </script>
+</body>
+</html>

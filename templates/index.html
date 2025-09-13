@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot de Soporte - TelcoPlus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #e6e6e6 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+        .header {
+            background: #4285f4;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .loyalty-badge {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .low-loyalty { color: #ea4335; }
+        .medium-loyalty { color: #fbbc05; }
+        .high-loyalty { color: #34a853; }
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+        }
+        .user-message {
+            background: #4285f4;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        .bot-message {
+            background: white;
+            border: 1px solid #e0e0e0;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        .system-message {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            margin: 10px auto;
+            text-align: center;
+            font-size: 0.85rem;
+            max-width: 90%;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
+            margin-right: auto;
+            margin-bottom: 15px;
+            max-width: 80px;
+        }
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        #userInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        #userInput:focus {
+            border-color: #4285f4;
+        }
+        #sendBtn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        #sendBtn:hover {
+            background: #3367d6;
+        }
+        #sendBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .customer-id-form {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        #customerIDInput {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+        #setCustomerBtn {
+            background: #34a853;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .waiting-message {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Chatbot de Soporte</h1>
+            <p>Estamos aquí para ayudarte</p>
+            <div id="loyaltyBadge" class="loyalty-badge" style="display: none;">
+                Nivel: <span id="loyaltyLevel"></span>
+            </div>
+        </div>
+        
+        <div class="customer-id-form">
+            <input type="text" id="customerIDInput" placeholder="Ingresa tu Customer ID" autocomplete="off">
+            <button id="setCustomerBtn">Identificarme</button>
+        </div>
+        
+        <div class="chat-area" id="chatArea">
+            <div class="message bot-message">
+                ¡Hola! 👋 Soy tu asistente virtual de TelcoPlus.<br><br>
+                Por favor ingresa tu <strong>Customer ID</strong> para comenzar y poder brindarte la mejor atención personalizada.
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Escribe tu mensaje..." disabled>
+            <button id="sendBtn" disabled>Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        let currentCustomerID = null;
+        let currentSessionID = 'session_' + Math.random().toString(36).substr(2, 9);
+        let loyaltyLevel = null;
+        let isWaitingForResponse = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatArea = document.getElementById('chatArea');
+            const userInput = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const customerIDInput = document.getElementById('customerIDInput');
+            const setCustomerBtn = document.getElementById('setCustomerBtn');
+            const loyaltyBadge = document.getElementById('loyaltyBadge');
+            const loyaltyLevelSpan = document.getElementById('loyaltyLevel');
+
+            function addMessage(text, sender = 'bot') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                
+                if (sender === 'system') {
+                    messageDiv.textContent = text;
+                } else {
+                    // Para mensajes normales, permitir HTML
+                    messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+                }
+                
+                chatArea.appendChild(messageDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.id = 'typingIndicator';
+                typingDiv.className = 'typing-indicator';
+                typingDiv.innerHTML = `
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                `;
+                chatArea.appendChild(typingDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+
+            function hideTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+
+            function updateLoyaltyBadge(level) {
+                loyaltyLevel = level;
+                loyaltyLevelSpan.textContent = 
+                    level === 0 ? 'Baja' : 
+                    level === 1 ? 'Media' : 'Alta';
+                
+                loyaltyBadge.className = `loyalty-badge ${
+                    level === 0 ? 'low-loyalty' : 
+                    level === 1 ? 'medium-loyalty' : 'high-loyalty'
+                }`;
+                loyaltyBadge.style.display = 'block';
+            }
+
+            async function checkActiveRun() {
+                try {
+                    const response = await fetch('/check_active_run', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            sessionID: currentSessionID
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    return result.status === 'success' && result.has_active_run;
+                } catch (error) {
+                    console.error('Error checking active run:', error);
+                    return false;
+                }
+            }
+
+            async function startNewChat() {
+                if (!currentCustomerID) return;
+
+                showTypingIndicator();
+                isWaitingForResponse = true;
+                
+                try {
+                    const response = await fetch('/start_chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            customerID: currentCustomerID,
+                            sessionID: currentSessionID
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    hideTypingIndicator();
+                    isWaitingForResponse = false;
+
+                    if (result.status === 'success') {
+                        addMessage(result.response, 'bot');
+                        updateLoyaltyBadge(result.loyalty_level);
+                    } else {
+                        addMessage('❌ ' + result.message, 'bot');
+                    }
+
+                } catch (error) {
+                    hideTypingIndicator();
+                    isWaitingForResponse = false;
+                    addMessage('❌ Error de conexión con el servidor', 'bot');
+                    console.error('Error:', error);
+                }
+            }
+
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                if (!message || !currentCustomerID || isWaitingForResponse) return;
+
+                // Verificar si hay un run activo
+                const hasActiveRun = await checkActiveRun();
+                if (hasActiveRun) {
+                    addMessage('⏳ Por favor espera a que termine la respuesta anterior...', 'system');
+                    return;
+                }
+
+                // Agregar mensaje del usuario
+                addMessage(message, 'user');
+                userInput.value = '';
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+                isWaitingForResponse = true;
+
+                // Mostrar indicador de typing
+                showTypingIndicator();
+
+                try {
+                    const response = await fetch('/chat_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            sessionID: currentSessionID
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    hideTypingIndicator();
+                    isWaitingForResponse = false;
+
+                    if (result.status === 'success') {
+                        addMessage(result.response, 'bot');
+                    } else {
+                        addMessage('❌ ' + result.message, 'bot');
+                    }
+
+                } catch (error) {
+                    hideTypingIndicator();
+                    isWaitingForResponse = false;
+                    addMessage('❌ Error de conexión con el servidor', 'bot');
+                    console.error('Error:', error);
+                }
+
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+
+            async function setCustomerID() {
+                const customerID = customerIDInput.value.trim().toUpperCase();
+                if (!customerID) return;
+
+                currentCustomerID = customerID;
+                customerIDInput.disabled = true;
+                setCustomerBtn.disabled = true;
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+
+                // Mostrar información del cliente
+                addMessage(`✅ Identificado correctamente como ${customerID}`, 'bot');
+                addMessage("Conectando con nuestro especialista virtual...", 'bot');
+                
+                // Iniciar la conversación con el Assistant
+                await startNewChat();
+            }
+
+            // Event listeners
+            sendBtn.addEventListener('click', sendMessage);
+            setCustomerBtn.addEventListener('click', setCustomerID);
+            
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !isWaitingForResponse) {
+                    sendMessage();
+                }
+            });
+
+            customerIDInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    setCustomerID();
+                }
+            });
+
+            // Enfocar el input al cargar
+            customerIDInput.focus();
+        });
+    </script>
+</body>
+</html>
